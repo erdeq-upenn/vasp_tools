@@ -1,0 +1,49 @@
+#!/bin/bash 
+#PBS -V
+#PBS -N 5-V-Te-H
+#PBS -r n
+#PBS -j oe
+#PBS -m n
+##PBS -q standby
+#PBS -l nodes=1:ppn=32
+#PBS -l walltime=3:00:00:00
+#PBS -l pmem=1920mb
+# this environment variable is set as the directory where the job was submitted
+cd $PBS_O_WORKDIR
+
+NPROCS=`wc -l < $PBS_NODEFILE`
+
+ulimit -s unlimited
+#cd /mnt/io2/walnut/home/erdeq || exit 0
+#mkdir Janus-$PBS_JOBID || exit 0
+#cd Janus-$PBS_JOBID || exit 0
+#cp $PBS_O_WORKDIR/* .
+#ulimit -l unlimited
+#echo "t">t.test
+MPIRUN="mpirun -np $NPROCS -machinefile $PBS_NODEFILE"
+#VASP="/opt/pkg/vasp/5.3.5-icc/vasp-normal" #for 5.3.5 normal
+#VASP="/opt/pkg/vasp/5.3.5-icc/vasp-gamma" #for 5.3.5 gamma_big system(KPOINTS= 1 1 1)
+#VASP="/home/erdeq/software/vasp5.3/vasp"
+#VASP="/home/erdeq/software/vasp-beef"
+VASP="/data/p_vsheno/liang/vasp-beef"
+#$MPIRUN $VASP > vasp.out
+#rm CHG
+#cp * $PBS_O_WORKDIR
+
+#for strain in $(seq 0.02 0.01 0.05)
+#do
+#rm s$strain -rf
+#mkdir s$strain
+#cd s$strain
+#cp ../../scf/CONTCAR POSCAR 
+#python ~/tools/strain_xy.py ../POSCAR $strain >  POSCAR
+#rm INCAR -rf
+#cp ../INCAR .
+#cp ../KPOINTS .
+#cp ../../../scf/vdw_kernel.bindat .
+#ln -s ../POTCAR POTCAR
+$MPIRUN $VASP > vasp.out
+#rm CHG
+#cd ..
+#done
+#cp * $PBS_O_WORKDIR

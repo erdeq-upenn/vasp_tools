@@ -1,0 +1,30 @@
+1/25/2013
+
+         Welcome to the Oscar compute cluster at the Brown University
+                   Center for Computation and Visualization
+
+                 Documentation:                 Email support:
+            http://ccv.brown.edu/doc        support@ccv.brown.edu
+
+Do not run your applications directly on this login node! Instead use:
+
+interact - Launch an interactive session on a compute node
+sbatch   - Submit a batch script to the queue
+
+Other useful commands:
+
+module   - Find and load software modules
+myquota  - View your disk quota
+myq      - List your running and queued jobs
+allq     - List all running and queued jobs
+nodes    - Summarize the compute nodes and their properties
+
+There is a sample "batch.script" file in your home directory that shows how to
+launch a serial job on the compute cluster.
+
+You can find more examples of batch scripts for threaded and MPI jobs in
+the "batch_scripts" subdirectory in your home directory.
+
+In each home directory there are "scratch" and "data" links pointing to the
+filesystems for temporary/scratch and long-term storage, respectively.
+

@@ -1,0 +1,204 @@
+import sys
+import math
+import numpy as np
+import matplotlib
+#matplotlib.use('PDF')
+import matplotlib.pyplot as plt
+from matplotlib import rc
+
+
+def dot_product(a1,a2):
+    sum = 0.0
+    for i in range(len(a1)):
+        sum = sum + (a1[i]-a2[i])*(a1[i]-a2[i])
+    return sum
+
+class KPOINTS:
+    def __init__(self):
+        f = open("BANDKS")
+        lines = f.readlines()
+        f.close()
+        
+        self.parse(lines)
+        
+    def parse(self, lines):
+        self.nkpt = int(lines[1])
+        nbandlines = (len(lines)-4+1)/3
+        
+        self.bandlimits = []
+        self.bandsymbol = []
+        nline = 3
+        for n in range(nbandlines):            
+            for i in range(2):
+                nline = nline + 1
+                sline = lines[nline].split()
+                a = float(sline[0])
+                b = float(sline[1])
+                c = float(sline[2])
+                self.bandlimits.append([a,b,c])
+                self.bandsymbol.append(sline[-1])
+            nline = nline + 1
+
+        nn = 0
+        self.spoint = {}
+        self.kdist = []
+        sum = 0.0
+        for n in range(nbandlines):
+            n1 = n*2
+            n2 = n*2 + 1
+            a1 = self.bandlimits[n1]
+            a2 = self.bandlimits[n2]
+            
+            base = 0.0
+            if len(self.kdist) >= 1:
+                base = self.kdist[-1]
+                
+            for i in range(self.nkpt):
+                a3 = [0,0,0]
+                for j in range(len(a1)):
+                    a3[j] = a1[j] + (a2[j]-a1[j])*i/(self.nkpt-1)
+                
+                l1 = base + math.sqrt(dot_product(a3,a1))
+                self.kdist.append(l1)
+                if i == 0 or i == self.nkpt-1:                    
+                    if self.kdist[-1] in self.spoint:
+                        if self.spoint[self.kdist[-1]][0] != self.bandsymbol[nn]:
+                            self.spoint[self.kdist[-1]].append(self.bandsymbol[nn])
+                    else:
+                        self.spoint[self.kdist[-1]] = [self.bandsymbol[nn]]
+                    nn = nn + 1
+                    
+
+class VaspBand:
+    def __init__(self, lines, fermi, ymin, ymax, title):
+        self.lines = lines
+	self.fermi = fermi
+        self.ymin = ymin
+        self.ymax = ymax
+	self.title = title
+        self.get_info()
+        self.get_energy()
+        self.kp = KPOINTS()
+
+
+    def draw_bands(self):
+        rc('text', usetex=True)
+        rc('font', family='serif')
+    	rc('xtick', labelsize=16)
+	rc('ytick', labelsize=16)
+    
+        nbands = self.nbands
+        plt.figure(figsize=(5,8))        
+        for n in range(nbands):
+            xs = []
+            ys = []
+            for k in range(self.nkpt):
+                xs.append(self.kp.kdist[k])
+                ys.append(self.evals[k][n])
+
+            lcolor = 'black'
+            lwidth = 1
+            
+            if n == self.nelec/2-1 :
+                lcolor = 'black'
+                lwidth = 2
+            
+            if n == self.nelec/2 :
+                lcolor = 'black'
+                lwidth = 2
+            
+            plt.plot(xs,ys,color=lcolor, lw=lwidth)
+            
+            plt.subplots_adjust(left=0.15,right=0.95,top=0.95,bottom=0.10)       
+
+        xt = []
+        yt = []
+
+        for key in self.kp.spoint:
+            label = self.kp.spoint[key]
+            print key, label
+            tics = ""
+            if len(label) > 1:
+                tics = label[0] + "(" + label[1] + ")"
+            else:
+                tics = label[0]
+                        
+            xt.append(key)
+            yt.append(tics)
+        
+            plt.axvline(key,color='black',ls='-')
+
+        plt.xticks(xt,yt,fontsize=18)
+#        plt.xticks((0.0,2),(r'\Gamma','X'),fontsize=16)
+	
+	plt.yticks( np.arange(self.ymin,self.ymax+1.0,1) )        
+        
+        xmin = min(self.kp.kdist)
+        xmax = max(self.kp.kdist)
+        plt.xlim(xmin,xmax)
+        plt.ylim(self.ymin,self.ymax)
+        plt.ylabel('Energy (eV)', fontsize=18)
+#        plt.show()
+        plt.axhline(y=0,color='blue',ls='-')
+ 	plt.title(self.title)
+ 	plt.savefig("bands.pdf", format='pdf')
+        plt.savefig("bands.png", format='png')
+
+    def make_bands(self):
+        for n in range(self.nbands):
+            for k in range(self.nkpt):
+#                print k, self.evals[k][n]
+                print self.kp.kdist[k], self.evals[k][n]
+            
+            print
+
+            
+        print "#", self.kp.spoint
+            
+    def get_info(self):
+        line = self.lines[5]
+        sline = line.split()
+        self.nbands = int(sline[2])
+        self.nkpt = int(sline[1])
+     	self.nelec = int(sline[0])
+#	print self.nbands, self.nkpt
+	   
+    def get_energy(self):
+        self.kpoints = []
+        self.evals = []
+        for n in range(self.nkpt):
+            nstart = n*(2+self.nbands) + 7
+            line = self.lines[nstart]
+#	    print line
+            sline = line.split()
+            kx = float(sline[0])
+            ky = float(sline[1])
+            kz = float(sline[2])
+            self.kpoints.append([kx,ky,kz])
+            
+            nstart = nstart + 1
+            self.evals.append([])
+            for m in range(self.nbands):
+                nline = nstart + m
+                line = self.lines[nline]
+                sline = line.split()
+                ev = float(sline[1]) - self.fermi
+                self.evals[-1].append(ev)
+
+def main():
+    filename = sys.argv[1]
+    fermi = float(sys.argv[2])
+    ymin = float(sys.argv[3])
+    ymax = float(sys.argv[4])
+    title = sys.argv[5]
+    file = open(filename, 'r')
+    lines = file.readlines()
+    vasp = VaspBand(lines, fermi, ymin, ymax, title)
+#    vasp.make_bands()
+    vasp.draw_bands()
+
+def main_kpoint():
+    kp = KPOINTS()
+
+if __name__ == '__main__':
+    main()
